@@ -19,13 +19,11 @@
 // Module dependencies
 var express = require('express');
 var bodyParser = require('body-parser');
-var multer = require('multer');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var morgan = require('morgan');
 var compression = require('compression');
 var expressBrowserify = require('express-browserify');
-var os = require('os');
 
 module.exports = function(app) {
   // Configure Express
@@ -53,21 +51,6 @@ module.exports = function(app) {
 
   // Setup static public directory
   app.use(express.static(path.join(__dirname, '..', 'public')));
-
-  // Setup the upload mechanism
-  var storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-      cb(null, os.tmpdir());
-    },
-    filename: function(req, file, cb) {
-      cb(null, Date.now() + '-' + file.originalname);
-    }
-  });
-
-  var upload = multer({
-    storage: storage
-  });
-  app.upload = upload;
 
   // When running in Bluemix add rate-limitation
   // and some other features around security
