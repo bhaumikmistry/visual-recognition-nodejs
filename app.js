@@ -145,6 +145,45 @@ app.post('/api/classifiers', app.upload.fields([{ name: 'classupload', maxCount:
 });
 
 /**
+ * Retrains a classifier
+ * @param req.body.bundles Array of selected bundles
+ * @param req.body.kind The bundle kind
+ */
+app.post('/api/retrain', app.upload.fields([{ name: 'classupload', maxCount: 4 }, { name: 'negativeclassupload', maxCount: 1 }]), function(req, res) {
+  var formData;
+
+  if (!req.files) {
+    formData = bundleUtils.createFormData(req.body);
+  } else {
+    formData = { name: req.body.classifiername };
+    req.files.classupload.map(function(fileobj, idx) {
+      formData[req.body.classname[idx] + '_positive_examples'] = fs.createReadStream(path.join(fileobj.destination, fileobj.filename));
+    });
+
+    if (req.files.negativeclassupload && req.files.negativeclassupload.length > 0) {
+      var negpath = path.join(req.files.negativeclassupload[0].destination, req.files.negativeclassupload[0].filename);
+      formData.negative_examples = fs.createReadStream(negpath);
+    }
+  }
+
+  visualRecognition.retrainClassifier(formData, function retrainClassifier(err, classifier) {
+    if (req.files) {
+      req.files.classupload.map(deleteUploadedFile);
+      if (req.files.negativeclassupload) {
+        req.files.negativeclassupload.map(deleteUploadedFile);
+      }
+    }
+
+    if (err) {
+      console.log(err);
+      return res.status(err.code || 500).json(err);
+    }
+    res.json(classifier);
+  });
+});
+
+
+/**
  * Gets the status of a classifier
  * @param req.params.classifier_id The classifier id
  */
